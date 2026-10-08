@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-export PATH="$HOME/dmp/bin:$HOME/.local/bin:$PATH" XDG_CONFIG_HOME="$HOME/.config" EDITOR=vim VISUAL=vim
+export PATH="$HOME/.local/bin:$PATH" XDG_CONFIG_HOME="$HOME/.config" EDITOR=vim VISUAL=vim
 
 [[ $- == *i* ]] || return
 
