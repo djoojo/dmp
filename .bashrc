@@ -20,8 +20,8 @@ _gp()
     return 0
 }
 
-_g=''
-PROMPT_COMMAND='_g=$(_gp)'
+_g=$(_gp)
+PROMPT_COMMAND='_g'
 PS1="\[\e[$((EUID ? 32 : 31))m\]->\[\e[0m\] \[\e[1;36m\]\W\[\e[0m\]\$_g >> "
 
 for f in "$HOME/.bashrc.d"/*; do
