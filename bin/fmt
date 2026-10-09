@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+u()
+{
+cat <<EOF
+usage: ${0##*/} <path>...
+EOF
+exit 1
+}
+die()
+{
+printf 'error: %s\n' "$1" >&2
+exit 1
+}
+need()
+{
+local c
+for c in "$@";do
+command -v "$c" >/dev/null||die "$c is not installed"
+done
+}
+f()
+{
+local o l f=$1 r='^#!.*[/ ](ba)?sh([[:space:]]|$)'
+case $f in
+*.sh|*bashrc)shfmt -ln bash -fn -s -mn -w "$f"
+;;
+*.json)o=$(jq -c . "$f")
+printf '%s\n' "$o" >"$f"
+;;
+*)l=
+IFS= read -r l <"$f"||true
+if [[ $l =~ $r ]];then
+shfmt -ln bash -fn -s -mn -w "$f"
+elif grep -Iq . "$f";then
+o=$(sed 's/[[:space:]]*$//' "$f")
+printf '%s\n' "$o" >"$f"
+fi
+esac
+}
+m()
+{
+local a f
+for a in "$@";do
+[[ $a != -h ]]||u
+done
+(($#))||u
+need shfmt jq
+while IFS= read -r -d '' f;do
+f "$f"
+done < <(find "$@" -name .git -prune -o -type f -print0)
+}
+m "$@"

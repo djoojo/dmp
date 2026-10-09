@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+die()
+{
+printf 'error: %s\n' "$1" >&2
+exit 1
+}
+need()
+{
+local c
+for c in "$@";do
+command -v "$c" >/dev/null||die "$c is not installed"
+done
+}
+m()
+{
+local s
+need tmux fzf
+tmux has 2>/dev/null||die 'no running sessions'
+s=$(tmux ls -F '#S'|fzf --layout=reverse --height=10)||exit 0
+[[ -z ${TMUX-} ]]||exec tmux switch -t="$s"
+exec tmux attach -t="$s"
+}
+m "$@"

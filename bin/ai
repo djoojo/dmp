@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+die()
+{
+printf 'error: %s\n' "$1" >&2
+exit 1
+}
+need()
+{
+local c
+for c in "$@";do
+command -v "$c" >/dev/null||die "$c is not installed"
+done
+}
+bld()
+{
+local c
+c=$(buildah from docker.io/library/debian:trixie-slim)
+buildah run "$c" -- apt-get update
+buildah run "$c" -- apt-get install -y --no-install-recommends ca-certificates curl git
+buildah run "$c" -- useradd -m -u 1000 -s /bin/bash claude
+buildah config --cmd '' "$c"
+buildah config \
+--user claude \
+--env HOME=/home/claude \
+--env PATH=/home/claude/.local/bin:/usr/bin \
+--env CLAUDE_CONFIG_DIR=/home/claude/.claude \
+--env DISABLE_AUTOUPDATER=1 \
+--entrypoint '["claude"]' \
+"$c"
+buildah run "$c" -- bash -c 'curl -fsSL https://claude.ai/install.sh | bash'
+buildah commit --rm "$c" "$1"
+}
+m()
+{
+local im=claude-code
+[[ $PWD != "$HOME" && $PWD != / ]]||die "refusing to mount $PWD"
+need podman buildah
+podman image exists "$im"||bld "$im"
+exec podman run --rm -it \
+--userns=keep-id:uid=1000,gid=1000 \
+-v "$PWD:$PWD" -w "$PWD" \
+-v claude-config:/home/claude/.claude \
+"$im" "$@"
+}
+m "$@"

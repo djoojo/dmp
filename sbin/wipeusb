@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+u()
+{
+cat <<EOF
+usage: ${0##*/} <device> <label>
+EOF
+exit 1
+}
+die()
+{
+printf 'error: %s\n' "$1" >&2
+exit 1
+}
+need()
+{
+local c
+for c in "$@";do
+command -v "$c" >/dev/null||die "$c is not installed"
+done
+}
+wipe()
+{
+local p d=$1 l=$2
+[[ $d == *[0-9] ]]&&p=${d}p1||p=${d}1
+umount "$d"?* 2>/dev/null||true
+wipefs -a "$d"
+sfdisk -q -X gpt --wipe-partitions always "$d" <<<'type=EBD0A0A2-B9E5-4433-87C0-68B6B72699C7'
+udevadm settle
+mkfs.exfat -L "$l" "$p"
+sync
+}
+m()
+{
+local a d l in
+for a in "$@";do
+[[ $a != -h ]]||u
+done
+(($#==2))||u
+((EUID==0))||die 'run as root'
+need lsblk wipefs sfdisk udevadm mkfs.exfat
+d=$1 l=$2
+[[ -b $d ]]||die "$d is not a block device"
+[[ $(lsblk -dnro TRAN "$d") == usb ]]||die "$d is not a usb device"
+((${#l}<=11))||die 'label is longer than 11 characters'
+lsblk -o NAME,SIZE,MODEL,LABEL,MOUNTPOINTS "$d"
+read -rp "erase $d? [y/N] " in
+[[ $in == [yY] ]]||exit 0
+wipe "$d" "$l"
+}
+m "$@"

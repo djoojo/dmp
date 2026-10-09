@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+die()
+{
+printf 'error: %s\n' "$1" >&2
+exit 1
+}
+need()
+{
+local c
+for c in "$@";do
+command -v "$c" >/dev/null||die "$c is not installed"
+done
+}
+m()
+{
+local d s w
+need tmux
+if (($#));then
+[[ -d $1 ]]||die "$1 is not a directory"
+d=$1
+else
+need fzf
+d=$(find ~ -mindepth 1 -maxdepth 2 -name '.*' -prune -o -type d -print 2>/dev/null|fzf)||exit 0
+fi
+d=$(cd -- "$d"&&pwd)
+s=${d##*/}
+s=${s//[.:]/_}
+if ! tmux has -t="$s" 2>/dev/null;then
+tmux new -ds "$s" -c "$d" -n x
+for w in x x x;do
+tmux neww -dt "=$s:" -c "$d" -n "$w"
+done
+fi
+[[ -z ${TMUX-} ]]||exec tmux switch -t="$s"
+exec tmux attach -t="$s"
+}
+m "$@"

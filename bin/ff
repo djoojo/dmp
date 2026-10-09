@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+die()
+{
+printf 'error: %s\n' "$1" >&2
+exit 1
+}
+need()
+{
+local c
+for c in "$@";do
+command -v "$c" >/dev/null||die "$c is not installed"
+done
+}
+m()
+{
+local p v='cat {}' l=(find . -mindepth 1 -name '.*' -prune -o -type f -print)
+need fzf
+command -v rg >/dev/null&&l=(rg --files)
+command -v batcat >/dev/null&&v='batcat --color=always --style=plain {}'
+command -v bat >/dev/null&&v='bat --color=always --style=plain {}'
+p=$("${l[@]}" 2>/dev/null|fzf --preview "$v" --preview-window=up,80%,border-bottom)||exit 0
+exec "${EDITOR:-vi}" -- "$p"
+}
+m "$@"

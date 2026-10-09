@@ -1,21 +1,34 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
+die()
+{
+printf 'error: %s\n' "$1" >&2
+exit 1
+}
+need()
+{
+local c
+for c in "$@";do
+command -v "$c" >/dev/null||die "$c is not installed"
+done
+}
+m()
+{
+local f in
 cd "$(dirname "$0")"
-
-cp .bashrc .tmux.conf ~
-mkdir -p ~/.local/bin
-
-for f in bin/*.sh; do
-    t=~/.local/bin/$(basename "$f" .sh)
-    cp "$f" "$t"
-    chmod +x "$t"
+need tmux fzf
+cp bashrc "$HOME/.bashrc"
+cp tmux.conf "$HOME/.tmux.conf"
+for f in bin/*;do
+install -Dm755 "$f" "$HOME/.local/bin/${f##*/}"
 done
-
-sudo -v 2>/dev/null || { printf 'warning: no root, skipping sbin\n' >&2; exit 0; }
-
-for f in sbin/*.sh; do
-    t=/usr/local/sbin/$(basename "$f" .sh)
-    sudo cp "$f" "$t"
-    sudo chmod +x "$t"
+if ((EUID));then
+read -rp 'install sbin (needs root)? [y/N] ' in
+[[ $in == [yY] ]]||exit 0
+sudo -v||die 'no root access'
+fi
+for f in sbin/*;do
+sudo install -Dm755 "$f" "/usr/local/sbin/${f##*/}"
 done
+}
+m "$@"
