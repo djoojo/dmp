@@ -21,7 +21,7 @@ if (($#));then
 d=$1
 else
 need fzf
-d=$(find ~ -mindepth 1 -maxdepth 2 -name '.*' -prune -o -type d -print 2>/dev/null|fzf)||exit 0
+d=$(find ~ -mindepth 1 -maxdepth 2 -name '.*' -prune -o -type d -print 2>/dev/null|fzf --layout=reverse --height=10)||exit 0
 fi
 d=$(cd -- "$d"&&pwd)
 s=${d##*/}
